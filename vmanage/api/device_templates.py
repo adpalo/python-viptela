@@ -328,8 +328,8 @@ class DeviceTemplates(object):
             action_id (str): Returns the action id of the attachment
 
         """
-        payload = self.get_multi_attach_payload([template_id])
-        for device in payload.get('deviceTemplateList')[0].get('device'):
+        payload = self.get_template_input(template_id)
+        for device in payload.get('data'):
             device['csv-templateId'] = template_id
             if len(uuid) == 0:
                 continue
@@ -338,7 +338,16 @@ class DeviceTemplates(object):
                     split_var = key.split('/')
                     if split_var[-1] in uuid.get(device.get('csv-deviceId')):
                         device[key] = uuid.get(device.get('csv-deviceId')).get(split_var[-1])
-
+        # Construct the variable payload
+        payload1 = {
+            "deviceTemplateList": [{
+                "templateId": template_id,
+                "device": payload.get('data'),
+                "isEdited": False,
+                "isMasterEdited": False
+            }]
+        }
+        
         if config_type == 'file':
             url = f"{self.base_url}template/device/config/attachcli"
         elif config_type == 'template':
@@ -347,7 +356,7 @@ class DeviceTemplates(object):
             raise RuntimeError('Got invalid Config Type')
 
         utils = Utilities(self.session, self.host, self.port)
-        response = HttpMethods(self.session, url).request('POST', payload=json.dumps(payload))
+        response = HttpMethods(self.session, url).request('POST', payload=json.dumps(payload1))
         action_id = ParseMethods.parse_id(response)
         utils.waitfor_action_completion(action_id)
 
