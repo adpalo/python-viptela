@@ -316,7 +316,7 @@ class DeviceTemplates(object):
             raise RuntimeError(f"Could not retrieve input for template {template_id}")
         return action_id
 
-    def attach_to_template(self, template_id, config_type, uuid):
+    def attach_to_template(self, template_id, config_type, uuid=None):
         """Attach and device to a template
 
         Args:
@@ -328,47 +328,21 @@ class DeviceTemplates(object):
             action_id (str): Returns the action id of the attachment
 
         """
+        payload = self.get_template_input(template_id)
+        for device in payload.get('data'):
+            device['csv-templateId'] = template_id
+            if len(uuid) == 0:
+                continue
+            if device.get('csv-deviceId') in uuid and uuid.get(device.get('csv-deviceId')) != {}:
+                for key in device:
+                    split_var = key.split('/')
+                    if split_var[-1] in uuid.get(device.get('csv-deviceId')):
+                        device[key] = uuid.get(device.get('csv-deviceId')).get(split_var[-1])
         # Construct the variable payload
-
-        device_template_var_list = list()
-        template_variables = self.get_template_input(template_id)
-
-        # Duplicate entries of variable get overwritten while set, Replace them with the property name
-        variables = [column.get('variable') for column in template_variables.get('columns')]
-        duplicates = set([v for v in variables if variables.count(v) > 1])
-
-        for device_uuid in uuid:
-
-            device_template_variables = {
-                "csv-status": "complete",
-                "csv-deviceId": device_uuid,
-                "csv-deviceIP": uuid[device_uuid]['system_ip'],
-                "csv-host-name": uuid[device_uuid]['host_name'],
-                '//system/host-name': uuid[device_uuid]['host_name'],
-                '//system/system-ip': uuid[device_uuid]['system_ip'],
-                '//system/site-id': uuid[device_uuid]['site_id'],
-            }
-
-            # Make sure they passed in the required variables and map
-            # variable name -> property mapping
-
-            for entry in template_variables['columns']:
-                if entry['variable']:
-                    if entry['variable'] in uuid[device_uuid]['variables'] and entry['variable'] not in duplicates:
-                        device_template_variables[entry['property']] = uuid[device_uuid]['variables'][entry['variable']]
-                    elif entry['variable'] in duplicates:
-                        device_template_variables[entry['property']] = uuid[device_uuid]['variables'][
-                            entry['property'].split('/')[-1]]
-                    else:
-                        raise RuntimeError(
-                            f"{entry['variable']} is missing for template {uuid[device_uuid]['host_name']}")
-
-            device_template_var_list.append(device_template_variables)
-
-        payload = {
+        payload1 = {
             "deviceTemplateList": [{
                 "templateId": template_id,
-                "device": device_template_var_list,
+                "device": payload.get('data'),
                 "isEdited": False,
                 "isMasterEdited": False
             }]
@@ -382,7 +356,7 @@ class DeviceTemplates(object):
             raise RuntimeError('Got invalid Config Type')
 
         utils = Utilities(self.session, self.host, self.port)
-        response = HttpMethods(self.session, url).request('POST', payload=json.dumps(payload))
+        response = HttpMethods(self.session, url).request('POST', payload=json.dumps(payload1))
         action_id = ParseMethods.parse_id(response)
         utils.waitfor_action_completion(action_id)
 
