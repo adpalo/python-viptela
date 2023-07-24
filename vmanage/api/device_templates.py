@@ -173,7 +173,7 @@ class DeviceTemplates(object):
         if device_id_list:
             deviceIds = device_id_list
         else:
-            deviceIds = self.get_template_attachments(template_id, key='uuid')
+            deviceIds = []
         payload = {"deviceIds": deviceIds, "isEdited": False, "isMasterEdited": False, "templateId": template_id}
         return_dict = {"columns": [], "data": []}
 
@@ -347,7 +347,7 @@ class DeviceTemplates(object):
                 "isMasterEdited": False
             }]
         }
-        
+
         if config_type == 'file':
             url = f"{self.base_url}template/device/config/attachcli"
         elif config_type == 'template':
