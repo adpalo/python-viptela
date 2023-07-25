@@ -173,7 +173,7 @@ class DeviceTemplates(object):
         if device_id_list:
             deviceIds = device_id_list
         else:
-            deviceIds = []
+            deviceIds = self.get_template_attachments(template_id, key='uuid')
         payload = {"deviceIds": deviceIds, "isEdited": False, "isMasterEdited": False, "templateId": template_id}
         return_dict = {"columns": [], "data": []}
 
