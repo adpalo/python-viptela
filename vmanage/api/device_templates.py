@@ -336,9 +336,10 @@ class DeviceTemplates(object):
             if device.get('csv-deviceId') in uuid and uuid.get(device.get('csv-deviceId')) != {}:
                 for key in device:
                     split_var = key.split('/')
-                    if split_var[-1] in uuid.get(device.get('csv-deviceId')):
-                        device[key] = uuid.get(device.get('csv-deviceId')).get(split_var[-1])
-        # Construct the variable payload
+                    name = 'ipsec1' if 'ipsec1' in split_var else 'ipsec2'
+                    if split_var[-1] in uuid.get(device.get('csv-deviceId')).get(name):
+                        device[key] = uuid.get(device.get('csv-deviceId')).get(name).get(split_var[-1])
+
         payload1 = {
             "deviceTemplateList": [{
                 "templateId": template_id,
